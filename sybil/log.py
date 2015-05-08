@@ -4,7 +4,7 @@ handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt="%(asctime)s [%(levelname)s]: "
                                            "%(message)s"))
 
-logger = logging.getLogger()
+logger = logging.getLogger('sybil')
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
