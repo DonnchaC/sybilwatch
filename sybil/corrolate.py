@@ -8,6 +8,7 @@ import argparse
 import datetime
 import socket
 import sys
+import re
 
 import stem.control
 import stem.descriptor
@@ -36,14 +37,27 @@ def parse_cmd_args():
     parser.add_argument("--ips", type=argparse.FileType('r'), default=None,
                         help="Load list of IP's to filter the consensus.")
 
+    parser.add_argument("--fingerprints", type=argparse.FileType('r'),
+                        help="Load list of IP's to filter the consensus.",
+                        default=None)
+
     parser.add_argument("--or-port", type=int, help="Filter by OR port.")
 
     parser.add_argument("--dir-port", type=int, help="Filter by Dir port.")
+
+    parser.add_argument("--nickname", type=str,
+                        help="Filter nickname field with regex")
+
+    parser.add_argument("--contact", type=str,
+                        help="Filter contact field with regex")
 
     args = parser.parse_args()
 
     if args.ips:
         args.ips = [ip.rstrip() for ip in args.ips]
+
+    if args.fingerprints:
+        args.fingerprints = [fpr.rstrip() for fpr in args.fingerprints]
 
     return args
 
@@ -71,6 +85,9 @@ def main():
     if args.ips:
         descriptors = [desc for desc in descriptors if
                        desc.address in args.ips]
+    if args.ips:
+        descriptors = [desc for desc in descriptors if
+                       desc.fingerprint in args.fingerprints]
     if args.tor_version:
         descriptors = [desc for desc in descriptors if
                        str(desc.tor_version) == args.tor_version]
@@ -80,6 +97,12 @@ def main():
     if args.dir_port:
         descriptors = [desc for desc in descriptors if
                        desc.dir_port == args.dir_port]
+    if args.nickname:
+        descriptors = [desc for desc in descriptors if
+                       re.search(args.nickname, desc.nickname)]
+    if args.contact:
+        descriptors = [desc for desc in descriptors if
+                       re.search(args.contact, desc.contact)]
 
     # Sort relays by IP address and OR port
     descriptors = sorted(descriptors,
