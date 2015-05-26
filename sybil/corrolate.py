@@ -82,6 +82,10 @@ def parse_cmd_args():
     parser.add_argument("-p", "--control-port", type=int, default=9051,
                         help="Tor control port (default: %(default)d)")
 
+    parser.add_argument("--network-status", action='store_true',
+                        help="Read latest network status document rather than "
+                             "the stored server descriptors.")
+
     maxmind = parser.add_argument_group('MaxMind GeoIP Options',
                                         description="Configure local MaxMind "
                                         "GeoIP database for AS lookups")
@@ -207,13 +211,17 @@ def main():
     else:
         logger.debug("Successfully connected to the Tor control port")
 
-    # Load cached descriptors from disk
-    cached_descriptors = consensus.get_descriptors(controller)
+    # Load cached server descriptors
+    if args.network_status:
+        # Retrieve network status
+        descriptors = consensus.get_consensus(controller)
+    else:
+        descriptors = consensus.get_descriptors(controller)
 
     logger.debug("Finished loading Tor relay descriptors")
 
     # Filter the cached descriptors
-    descriptors = cached_descriptors.values()
+    descriptors = descriptors.values()
 
     # Filter by IP's or Fingerprints loaded from file
     if args.fingerprint_file:
