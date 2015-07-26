@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
 Corrolate.py
@@ -48,7 +49,7 @@ def field_eval(field, value, statement, substitute_variables=True):
         #
         return any([v == str(value) for v in values])
     if field in statement and substitute_variables:
-        return eval(statement.replace(field, str(value)))
+        return eval(statement.replace(field, str(value if value else 0)))
     else:
         return statement == value
 
@@ -146,7 +147,7 @@ def parse_cmd_args():
 
     output.add_argument("--fields", type=comma_delimitated,
                         default='address,or_port,dir_port,as,tor_version,'
-                                'uptime,fingerprint',
+                                'uptime,bandwidth, nickname, fingerprint',
                         help="Comma deliminated set of fields to display "
                              "(default '%(default)s'). Use as_full to get "
                              "the full AS name")
@@ -337,6 +338,7 @@ def main():
     if args.format in ['simple', 'html']:
         # Hmm, why doesn't a generator function of a generator function work?
         order_result_rows = [[row.get(f) for f in fields] for row in results]
+        fields = [field.replace('_port', '') for field in fields]
         print(tabulate.tabulate(order_result_rows, fields,
                                 tablefmt=args.format))
 
@@ -366,6 +368,7 @@ def main():
             # Sort pairs by count
             key_count_pairs.sort(key=lambda pair: pair[1], reverse=True)
             output_columns.extend(zip(*key_count_pairs))
+
         result_rows = itertools.izip_longest(*output_columns)
 
         # Create list of headers, followed by empty field for the count column
