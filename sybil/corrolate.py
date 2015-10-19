@@ -10,6 +10,7 @@ Allow filtering by all fields.
 Searching by flags.
 Allow searching of cached_descriptors as well as the cached_consensus
 """
+from __future__ import division
 
 import argparse
 import datetime
@@ -18,7 +19,7 @@ import sys
 import re
 import csv
 import collections
-import itertools
+from future.moves.itertools import zip_longest
 
 import stem.control
 import stem.descriptor
@@ -158,6 +159,9 @@ def parse_cmd_args():
     output.add_argument("--counter", type=comma_delimitated, default=[],
                         help="Output a table of frequency table for the "
                              "specified fields. (e.g. 'as,tor_version')")
+
+    output.add_argument("--counter-percent", action='store_true',
+                        help="Output cumulative percentage for each value.")
 
     return parser.parse_args()
 
@@ -365,14 +369,26 @@ def main():
             # Get list of final (key, count) from the Counter() object
             key_count_pairs = [(value, count) for value, count
                                in counters[field].items()]
+            if args.counter_percent:
+                total_count = sum([count for value, count in key_count_pairs])
+                # Output percentage for each item
+                key_count_pairs = [(value, count,
+                                   "{:.2%}".format(count/total_count))
+                                   for value, count in key_count_pairs]
+
             # Sort pairs by count
             key_count_pairs.sort(key=lambda pair: pair[1], reverse=True)
             output_columns.extend(zip(*key_count_pairs))
 
-        result_rows = itertools.izip_longest(*output_columns)
+        result_rows = zip_longest(*output_columns)
 
-        # Create list of headers, followed by empty field for the count column
-        column_headers = sum(([field, ''] for field in counter_fields), [])
+        # Create list of headers, followed by empty field for the count column,
+        # add another column if outputting percentages
+        column_headers = []
+        for field in counter_fields:
+            column_headers.extend([field, ''])
+            if args.counter_percent:
+                column_headers.append('')
 
         print('')
         print(tabulate.tabulate(result_rows,
