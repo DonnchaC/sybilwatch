@@ -47,12 +47,11 @@ def field_eval(field, value, statement, substitute_variables=True):
 
     values = comma_delimitated(statement)
     if len(values) > 1:
-        #
         return any([v == str(value) for v in values])
     if field in statement and substitute_variables:
         return eval(statement.replace(field, str(value if value else 0)))
     else:
-        return statement == value
+        return statement == str(value)
 
 
 def get_autonomous_system(gi, ip_address, full=False):
