@@ -63,11 +63,14 @@ def get_autonomous_system(gi, ip_address, full=False):
         as_number, organisation_name = as_data.split(' ', 1)
     except Exception:
         return None
-    else:
-        if full:
-            return '{} {}'.format(as_number, organisation_name)
-        else:
+
+    if full:
+        try:
+            return '{} {}'.format(as_number, organisation_name.decode('utf-8'))
+        except UnicodeEncodeError:
             return as_number
+    else:
+        return as_number
 
 
 def parse_cmd_args():
