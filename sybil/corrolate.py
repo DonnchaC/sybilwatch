@@ -140,6 +140,10 @@ def parse_cmd_args():
     filter.add_argument("--no-contact", action='store_true',
                         help="Only show relays without contact field")
 
+    filter.add_argument("--flags", type=str, default=None,
+                        help="Only show relays with specified flags "
+                        "(correct case required Exit, HSDir etc.")
+
     output = parser.add_argument_group('Output Format')
 
     output.add_argument("--fingerprints", action='store_true',
@@ -219,11 +223,13 @@ def main():
         logger.debug("Successfully connected to the Tor control port")
 
     # Load cached server descriptors
-    if args.network_status:
-        # Retrieve network status
-        descriptors = consensus.get_consensus(controller)
-    else:
-        descriptors = consensus.get_descriptors(controller)
+    descriptors = consensus.get_descriptors(controller)
+
+    # Retrieve network status if we need info from consensus (such as flags)
+    if args.flags or args.network_status:
+        ns_descs = consensus.get_consensus(controller)
+        for key, desc in descriptors.items():
+            descriptors[key].flags = getattr(ns_descs.get(key), 'flags', [])
 
     logger.debug("Finished loading Tor relay descriptors")
 
@@ -240,6 +246,10 @@ def main():
         ips = [fpr.rstrip() for fpr in args.ip_file]
         descriptors = [desc for desc in descriptors if
                        desc.address in ips]
+
+    if args.flags:
+        descriptors = [desc for desc in descriptors if all(flag in
+                       desc.flags for flag in comma_delimitated(args.flags))]
 
     if args.tor_version:
         descriptors = [desc for desc in descriptors if
